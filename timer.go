@@ -120,7 +120,7 @@ func loadTimers() {
 
 //获得标准化定时字符串
 func GetTimerInfo(ts *TimeStamp) string {
-	return fmt.Sprintf("%d月%d日%d周%d:%d", ts.Month, ts.Day, ts.Week, ts.Hour, ts.Minute)
+	return fmt.Sprintf("[%d]%d月%d日%d周%d:%d", ts.Grpid, ts.Month, ts.Day, ts.Week, ts.Hour, ts.Minute)
 }
 
 //获得填充好的ts
