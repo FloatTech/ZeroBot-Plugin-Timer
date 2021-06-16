@@ -58,13 +58,15 @@ func judgeHM(ts *TimeStamp) {
 
 func RegisterTimer(ts *TimeStamp, save bool) {
 	key := GetTimerInfo(ts)
-	t, ok := (*Timers)[key]
-	if t != ts && ok { //避免重复注册定时器
-		t.Enable = false
-	}
-	(*Timers)[key] = ts
-	if save {
-		SaveTimers()
+	if Timers != nil {
+		t, ok := (*Timers)[key]
+		if t != ts && ok { //避免重复注册定时器
+			t.Enable = false
+		}
+		(*Timers)[key] = ts
+		if save {
+			SaveTimers()
+		}
 	}
 	fmt.Printf("[群管]注册计时器[%t]%s\n", ts.Enable, key)
 	for ts.Enable {
