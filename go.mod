@@ -1,4 +1,4 @@
-module github.com/fumiama/ZeroBot-Plugin-Timer
+module github.com/FloatTech/ZeroBot-Plugin-Timer
 
 go 1.16
 
