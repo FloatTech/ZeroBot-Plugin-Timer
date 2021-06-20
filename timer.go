@@ -9,8 +9,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/Yiwen-Chan/ZeroBot-Plugin/api/msgext"
-	"github.com/Yiwen-Chan/ZeroBot-Plugin/api/utils"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
@@ -25,15 +23,18 @@ var (
 	timersmap TimersMap
 	Timers    *(map[string]*Timer)
 	//定时器存储位置
-	BOTPATH  = utils.PathExecute()       // 当前bot运行目录
-	DATAPATH = BOTPATH + "data/manager/" // 数据目录
-	PBFILE   = DATAPATH + "timers.pb"
+	BOTPATH, _ = os.Getwd()                 // 当前bot运行目录
+	DATAPATH   = BOTPATH + "/data/manager/" // 数据目录
+	PBFILE     = DATAPATH + "timers.pb"
 )
 
 func init() {
 	go func() {
 		time.Sleep(time.Second)
-		utils.CreatePath(DATAPATH)
+		err := os.MkdirAll(DATAPATH, 0644)
+		if err != nil {
+			panic(err)
+		}
 		loadTimers()
 		Timers = &timersmap.Timers
 	}()
@@ -46,9 +47,9 @@ func judgeHM(ts *TimeStamp) {
 				ctx.Event = new(zero.Event)
 				ctx.Event.GroupID = int64(ts.Grpid)
 				if ts.Url == "" {
-					ctx.SendChain(msgext.AtAll(), message.Text(ts.Alert))
+					ctx.SendChain(message.At(0), message.Text(ts.Alert))
 				} else {
-					ctx.SendChain(msgext.AtAll(), message.Text(ts.Alert), msgext.ImageNoCache(ts.Url))
+					ctx.SendChain(message.At(0), message.Text(ts.Alert), message.Image(ts.Url).Add("no_cache", "1"))
 				}
 				return false
 			})
@@ -87,7 +88,7 @@ func SaveTimers() error {
 	data, err := timersmap.Marshal()
 	if err != nil {
 		return err
-	} else if utils.PathExists(DATAPATH) {
+	} else if _, err := os.Stat(DATAPATH); err == nil || os.IsExist(err) {
 		f, err1 := os.OpenFile(PBFILE, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 		if err1 != nil {
 			return err1
@@ -102,7 +103,7 @@ func SaveTimers() error {
 }
 
 func loadTimers() {
-	if utils.PathExists(PBFILE) {
+	if _, err := os.Stat(PBFILE); err == nil || os.IsExist(err) {
 		f, err := os.Open(PBFILE)
 		if err == nil {
 			data, err1 := io.ReadAll(f)
