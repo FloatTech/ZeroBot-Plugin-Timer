@@ -26,6 +26,13 @@ var (
 	BOTPATH, _ = os.Getwd()                 // 当前bot运行目录
 	DATAPATH   = BOTPATH + "/data/manager/" // 数据目录
 	PBFILE     = DATAPATH + "timers.pb"
+	//@全体成员
+	ATALL = message.MessageSegment{
+		Type: "at",
+		Data: map[string]string{
+			"qq": "all",
+		},
+	}
 )
 
 func init() {
@@ -47,9 +54,9 @@ func judgeHM(ts *TimeStamp) {
 				ctx.Event = new(zero.Event)
 				ctx.Event.GroupID = int64(ts.Grpid)
 				if ts.Url == "" {
-					ctx.SendChain(message.At("all"), message.Text(ts.Alert))
+					ctx.SendChain(ATALL, message.Text(ts.Alert))
 				} else {
-					ctx.SendChain(message.At("all"), message.Text(ts.Alert), message.Image(ts.Url).Add("cache", "0"))
+					ctx.SendChain(ATALL, message.Text(ts.Alert), message.Image(ts.Url).Add("cache", "0"))
 				}
 				return false
 			})
