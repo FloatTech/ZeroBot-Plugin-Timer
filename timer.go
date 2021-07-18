@@ -47,9 +47,9 @@ func judgeHM(ts *TimeStamp) {
 				ctx.Event = new(zero.Event)
 				ctx.Event.GroupID = int64(ts.Grpid)
 				if ts.Url == "" {
-					ctx.SendChain(message.At(0), message.Text(ts.Alert))
+					ctx.SendChain(message.At("all"), message.Text(ts.Alert))
 				} else {
-					ctx.SendChain(message.At(0), message.Text(ts.Alert), message.Image(ts.Url).Add("no_cache", "1"))
+					ctx.SendChain(message.At("all"), message.Text(ts.Alert), message.Image(ts.Url).Add("cache", "0"))
 				}
 				return false
 			})
