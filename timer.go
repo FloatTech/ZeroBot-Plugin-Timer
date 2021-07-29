@@ -116,7 +116,7 @@ func ListTimers(grpID uint64) []string {
 		keys := make([]string, 0, len(*Timers))
 		for k := range *Timers {
 			if strings.Contains(k, g) {
-				keys = append(keys, k)
+				keys = append(keys, k+"\n")
 			}
 		}
 		return keys
