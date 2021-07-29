@@ -109,6 +109,22 @@ func SaveTimers() error {
 	}
 }
 
+func ListTimers(grpID uint64) []string {
+	// 数组默认长度为map长度,后面append时,不需要重新申请内存和拷贝,效率很高
+	if Timers != nil {
+		g := strconv.FormatUint(grpID, 10)
+		keys := make([]string, 0, len(*Timers))
+		for k := range *Timers {
+			if strings.Contains(k, g) {
+				keys = append(keys, k)
+			}
+		}
+		return keys
+	} else {
+		return nil
+	}
+}
+
 func loadTimers() {
 	if _, err := os.Stat(PBFILE); err == nil || os.IsExist(err) {
 		f, err := os.Open(PBFILE)
@@ -207,7 +223,7 @@ func GetFilledTimeStamp(dateStrs []string, matchDateOnly bool) *TimeStamp {
 	return &ts
 }
 
-//汉字数字转int，仅支持-10～99，最多两位数，其中"每"解释为-1，"每两"为-2，以此类推
+//汉字数字转int，仅支持-10～99，最多两位数，其中"每"解释为-1，"每二"为-2，以此类推
 func chineseNum2Int(rs []rune) int32 {
 	r := -1
 	l := len(rs)
