@@ -38,7 +38,7 @@ var (
 func init() {
 	go func() {
 		time.Sleep(time.Second)
-		err := os.MkdirAll(DATAPATH, 0644)
+		err := os.MkdirAll(DATAPATH, 0755)
 		if err != nil {
 			panic(err)
 		}
