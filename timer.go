@@ -3,12 +3,13 @@ package timer
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 	"unicode"
+
+	log "github.com/sirupsen/logrus"
 
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
@@ -36,7 +37,6 @@ var (
 			"qq": "all",
 		},
 	}
-	deflog = log.Default()
 )
 
 func init() {
@@ -81,7 +81,7 @@ func RegisterTimer(ts *TimeStamp, save bool) {
 			SaveTimers()
 		}
 	}
-	deflog.Printf("[群管]注册计时器[%t]%s\n", ts.Enable, key)
+	log.Printf("[群管]注册计时器[%t]%s", ts.Enable, key)
 	for ts.Enable {
 		if ts.Month < 0 || ts.Month == int32(time.Now().Month()) {
 			if ts.Day < 0 || ts.Day == int32(time.Now().Day()) {
@@ -124,7 +124,7 @@ func ListTimers(grpID uint64) []string {
 		for k := range *Timers {
 			if strings.Contains(k, g) {
 				start := strings.Index(k, "]")
-				keys = append(keys, k[start+1:]+"\n")
+				keys = append(keys, k[start+1:]+"")
 			}
 		}
 		return keys
@@ -167,7 +167,7 @@ func GetFilledTimeStamp(dateStrs []string, matchDateOnly bool) *TimeStamp {
 	var ts TimeStamp
 	ts.Month = chineseNum2Int(monthStr)
 	if (ts.Month != -1 && ts.Month <= 0) || ts.Month > 12 { // 月份非法
-		deflog.Println("[群管]月份非法！")
+		log.Println("[群管]月份非法！")
 		return &ts
 	}
 	lenOfDW := len(dayWeekStr)
@@ -175,14 +175,14 @@ func GetFilledTimeStamp(dateStrs []string, matchDateOnly bool) *TimeStamp {
 		dayWeekStr = []rune{dayWeekStr[0], dayWeekStr[2]} // 去除中间的十
 		ts.Day = chineseNum2Int(dayWeekStr)
 		if (ts.Day != -1 && ts.Day <= 0) || ts.Day > 31 { // 日期非法
-			deflog.Println("[群管]日期非法1！")
+			log.Println("[群管]日期非法1！")
 			return &ts
 		}
 	} else if dayWeekStr[lenOfDW-1] == rune('日') { // xx日
 		dayWeekStr = dayWeekStr[:lenOfDW-1]
 		ts.Day = chineseNum2Int(dayWeekStr)
 		if (ts.Day != -1 && ts.Day <= 0) || ts.Day > 31 { // 日期非法
-			deflog.Println("[群管]日期非法2！")
+			log.Println("[群管]日期非法2！")
 			return &ts
 		}
 	} else if dayWeekStr[0] == rune('每') { // 每周
@@ -194,7 +194,7 @@ func GetFilledTimeStamp(dateStrs []string, matchDateOnly bool) *TimeStamp {
 		}
 		if ts.Week < 0 || ts.Week > 6 { // 星期非法
 			ts.Week = -11
-			deflog.Println("[群管]星期非法！")
+			log.Println("[群管]星期非法！")
 			return &ts
 		}
 	}
@@ -203,7 +203,7 @@ func GetFilledTimeStamp(dateStrs []string, matchDateOnly bool) *TimeStamp {
 	}
 	ts.Hour = chineseNum2Int(hourStr)
 	if ts.Hour < -1 || ts.Hour > 23 { // 小时非法
-		deflog.Println("[群管]小时非法！")
+		log.Println("[群管]小时非法！")
 		return &ts
 	}
 	if len(minuteStr) == 3 {
@@ -211,17 +211,17 @@ func GetFilledTimeStamp(dateStrs []string, matchDateOnly bool) *TimeStamp {
 	}
 	ts.Minute = chineseNum2Int(minuteStr)
 	if ts.Minute < -1 || ts.Minute > 59 { // 分钟非法
-		deflog.Println("[群管]分钟非法！")
+		log.Println("[群管]分钟非法！")
 		return &ts
 	}
 	if !matchDateOnly {
 		urlStr := dateStrs[5]
 		if urlStr != "" { // 是图片url
 			ts.Url = urlStr[3:] // utf-8下用为3字节
-			deflog.Println("[群管]" + ts.Url)
+			log.Println("[群管]" + ts.Url)
 			if !strings.HasPrefix(ts.Url, "http") {
 				ts.Url = "illegal"
-				deflog.Println("[群管]url非法！")
+				log.Println("[群管]url非法！")
 				return &ts
 			}
 		}
