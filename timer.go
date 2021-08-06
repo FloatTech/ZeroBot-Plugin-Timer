@@ -3,6 +3,7 @@ package timer
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -15,19 +16,21 @@ import (
 
 type (
 	TimeStamp = Timer
-	Ctx       = zero.Ctx
+)
+
+const (
+	// 定时器存储位置
+	datapath = "data/manager/" // 数据目录
+	pbfile   = datapath + "timers.pb"
 )
 
 var (
-	//记录每个定时器以便取消
+	// 记录每个定时器以便取消
 	timersmap TimersMap
-	Timers    *(map[string]*Timer)
-	//定时器存储位置
-	BOTPATH, _ = os.Getwd()                 // 当前bot运行目录
-	DATAPATH   = BOTPATH + "/data/manager/" // 数据目录
-	PBFILE     = DATAPATH + "timers.pb"
-	//@全体成员
-	ATALL = message.MessageSegment{
+	// 定时器map
+	Timers *(map[string]*Timer)
+	// @全体成员
+	atall = message.MessageSegment{
 		Type: "at",
 		Data: map[string]string{
 			"qq": "all",
@@ -38,7 +41,7 @@ var (
 func init() {
 	go func() {
 		time.Sleep(time.Second)
-		err := os.MkdirAll(DATAPATH, 0755)
+		err := os.MkdirAll(datapath, 0755)
 		if err != nil {
 			panic(err)
 		}
@@ -54,9 +57,9 @@ func judgeHM(ts *TimeStamp) {
 				ctx.Event = new(zero.Event)
 				ctx.Event.GroupID = int64(ts.Grpid)
 				if ts.Url == "" {
-					ctx.SendChain(ATALL, message.Text(ts.Alert))
+					ctx.SendChain(atall, message.Text(ts.Alert))
 				} else {
-					ctx.SendChain(ATALL, message.Text(ts.Alert), message.Image(ts.Url).Add("cache", "0"))
+					ctx.SendChain(atall, message.Text(ts.Alert), message.Image(ts.Url).Add("cache", "0"))
 				}
 				return false
 			})
@@ -68,7 +71,7 @@ func RegisterTimer(ts *TimeStamp, save bool) {
 	key := GetTimerInfo(ts)
 	if Timers != nil {
 		t, ok := (*Timers)[key]
-		if t != ts && ok { //避免重复注册定时器
+		if t != ts && ok { // 避免重复注册定时器
 			t.Enable = false
 		}
 		(*Timers)[key] = ts
@@ -76,7 +79,7 @@ func RegisterTimer(ts *TimeStamp, save bool) {
 			SaveTimers()
 		}
 	}
-	fmt.Printf("[群管]注册计时器[%t]%s\n", ts.Enable, key)
+	log.Default().Printf("[群管]注册计时器[%t]%s\n", ts.Enable, key)
 	for ts.Enable {
 		if ts.Month < 0 || ts.Month == int32(time.Now().Month()) {
 			if ts.Day < 0 || ts.Day == int32(time.Now().Day()) {
@@ -95,8 +98,8 @@ func SaveTimers() error {
 	data, err := timersmap.Marshal()
 	if err != nil {
 		return err
-	} else if _, err := os.Stat(DATAPATH); err == nil || os.IsExist(err) {
-		f, err1 := os.OpenFile(PBFILE, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	} else if _, err := os.Stat(datapath); err == nil || os.IsExist(err) {
+		f, err1 := os.OpenFile(pbfile, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 		if err1 != nil {
 			return err1
 		} else {
@@ -127,8 +130,8 @@ func ListTimers(grpID uint64) []string {
 }
 
 func loadTimers() {
-	if _, err := os.Stat(PBFILE); err == nil || os.IsExist(err) {
-		f, err := os.Open(PBFILE)
+	if _, err := os.Stat(pbfile); err == nil || os.IsExist(err) {
+		f, err := os.Open(pbfile)
 		if err == nil {
 			data, err1 := io.ReadAll(f)
 			if err1 == nil {
@@ -145,12 +148,12 @@ func loadTimers() {
 	timersmap.Timers = make(map[string]*Timer)
 }
 
-//获得标准化定时字符串
+// 获得标准化定时字符串
 func GetTimerInfo(ts *TimeStamp) string {
 	return fmt.Sprintf("[%d]%d月%d日%d周%d:%d", ts.Grpid, ts.Month, ts.Day, ts.Week, ts.Hour, ts.Minute)
 }
 
-//获得填充好的ts
+// 获得填充好的ts
 func GetFilledTimeStamp(dateStrs []string, matchDateOnly bool) *TimeStamp {
 	monthStr := []rune(dateStrs[1])
 	dayWeekStr := []rune(dateStrs[2])
@@ -159,62 +162,62 @@ func GetFilledTimeStamp(dateStrs []string, matchDateOnly bool) *TimeStamp {
 
 	var ts TimeStamp
 	ts.Month = chineseNum2Int(monthStr)
-	if (ts.Month != -1 && ts.Month <= 0) || ts.Month > 12 { //月份非法
-		fmt.Println("[群管]月份非法！")
+	if (ts.Month != -1 && ts.Month <= 0) || ts.Month > 12 { // 月份非法
+		log.Default().Println("[群管]月份非法！")
 		return &ts
 	}
 	lenOfDW := len(dayWeekStr)
-	if lenOfDW == 4 { //包括末尾的"日"
-		dayWeekStr = []rune{dayWeekStr[0], dayWeekStr[2]} //去除中间的十
+	if lenOfDW == 4 { // 包括末尾的"日"
+		dayWeekStr = []rune{dayWeekStr[0], dayWeekStr[2]} // 去除中间的十
 		ts.Day = chineseNum2Int(dayWeekStr)
-		if (ts.Day != -1 && ts.Day <= 0) || ts.Day > 31 { //日期非法
-			fmt.Println("[群管]日期非法1！")
+		if (ts.Day != -1 && ts.Day <= 0) || ts.Day > 31 { // 日期非法
+			log.Default().Println("[群管]日期非法1！")
 			return &ts
 		}
-	} else if dayWeekStr[lenOfDW-1] == rune('日') { //xx日
+	} else if dayWeekStr[lenOfDW-1] == rune('日') { // xx日
 		dayWeekStr = dayWeekStr[:lenOfDW-1]
 		ts.Day = chineseNum2Int(dayWeekStr)
-		if (ts.Day != -1 && ts.Day <= 0) || ts.Day > 31 { //日期非法
-			fmt.Println("[群管]日期非法2！")
+		if (ts.Day != -1 && ts.Day <= 0) || ts.Day > 31 { // 日期非法
+			log.Default().Println("[群管]日期非法2！")
 			return &ts
 		}
-	} else if dayWeekStr[0] == rune('每') { //每周
+	} else if dayWeekStr[0] == rune('每') { // 每周
 		ts.Week = -1
-	} else { //周x
+	} else { // 周x
 		ts.Week = chineseNum2Int(dayWeekStr[1:])
-		if ts.Week == 7 { //周天是0
+		if ts.Week == 7 { // 周天是0
 			ts.Week = 0
 		}
-		if ts.Week < 0 || ts.Week > 6 { //星期非法
+		if ts.Week < 0 || ts.Week > 6 { // 星期非法
 			ts.Week = -11
-			fmt.Println("[群管]星期非法！")
+			log.Default().Println("[群管]星期非法！")
 			return &ts
 		}
 	}
 	if len(hourStr) == 3 {
-		hourStr = []rune{hourStr[0], hourStr[2]} //去除中间的十
+		hourStr = []rune{hourStr[0], hourStr[2]} // 去除中间的十
 	}
 	ts.Hour = chineseNum2Int(hourStr)
-	if ts.Hour < -1 || ts.Hour > 23 { //小时非法
-		fmt.Println("[群管]小时非法！")
+	if ts.Hour < -1 || ts.Hour > 23 { // 小时非法
+		log.Default().Println("[群管]小时非法！")
 		return &ts
 	}
 	if len(minuteStr) == 3 {
-		minuteStr = []rune{minuteStr[0], minuteStr[2]} //去除中间的十
+		minuteStr = []rune{minuteStr[0], minuteStr[2]} // 去除中间的十
 	}
 	ts.Minute = chineseNum2Int(minuteStr)
-	if ts.Minute < -1 || ts.Minute > 59 { //分钟非法
-		fmt.Println("[群管]分钟非法！")
+	if ts.Minute < -1 || ts.Minute > 59 { // 分钟非法
+		log.Default().Println("[群管]分钟非法！")
 		return &ts
 	}
 	if !matchDateOnly {
 		urlStr := dateStrs[5]
-		if urlStr != "" { //是图片url
-			ts.Url = urlStr[3:] //utf-8下用为3字节
-			fmt.Println("[群管]" + ts.Url)
+		if urlStr != "" { // 是图片url
+			ts.Url = urlStr[3:] // utf-8下用为3字节
+			log.Default().Println("[群管]" + ts.Url)
 			if !strings.HasPrefix(ts.Url, "http") {
 				ts.Url = "illegal"
-				fmt.Println("[群管]url非法！")
+				log.Default().Println("[群管]url非法！")
 				return &ts
 			}
 		}
@@ -224,12 +227,12 @@ func GetFilledTimeStamp(dateStrs []string, matchDateOnly bool) *TimeStamp {
 	return &ts
 }
 
-//汉字数字转int，仅支持-10～99，最多两位数，其中"每"解释为-1，"每二"为-2，以此类推
+// 汉字数字转int，仅支持-10～99，最多两位数，其中"每"解释为-1，"每二"为-2，以此类推
 func chineseNum2Int(rs []rune) int32 {
 	r := -1
 	l := len(rs)
 	mai := rune('每')
-	if unicode.IsDigit(rs[0]) { //默认可能存在的第二位也为int
+	if unicode.IsDigit(rs[0]) { // 默认可能存在的第二位也为int
 		r, _ = strconv.Atoi(string(rs))
 	} else {
 		if rs[0] == mai {
@@ -253,9 +256,9 @@ func chineseNum2Int(rs []rune) int32 {
 	return int32(r)
 }
 
-//处理单个字符的映射0~10
+// 处理单个字符的映射0~10
 func chineseChar2Int(c rune) int {
-	if c == rune('日') || c == rune('天') { //周日/周天
+	if c == rune('日') || c == rune('天') { // 周日/周天
 		return 7
 	} else {
 		match := []rune("零一二三四五六七八九十")
