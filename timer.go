@@ -36,6 +36,7 @@ var (
 			"qq": "all",
 		},
 	}
+	deflog = log.Default()
 )
 
 func init() {
@@ -67,6 +68,7 @@ func judgeHM(ts *TimeStamp) {
 	}
 }
 
+// RegisterTimer 注册计时器
 func RegisterTimer(ts *TimeStamp, save bool) {
 	key := GetTimerInfo(ts)
 	if Timers != nil {
@@ -79,7 +81,7 @@ func RegisterTimer(ts *TimeStamp, save bool) {
 			SaveTimers()
 		}
 	}
-	log.Default().Printf("[群管]注册计时器[%t]%s\n", ts.Enable, key)
+	deflog.Printf("[群管]注册计时器[%t]%s\n", ts.Enable, key)
 	for ts.Enable {
 		if ts.Month < 0 || ts.Month == int32(time.Now().Month()) {
 			if ts.Day < 0 || ts.Day == int32(time.Now().Day()) {
@@ -94,6 +96,7 @@ func RegisterTimer(ts *TimeStamp, save bool) {
 	}
 }
 
+// SaveTimers 保存当前计时器
 func SaveTimers() error {
 	data, err := timersmap.Marshal()
 	if err != nil {
@@ -112,6 +115,7 @@ func SaveTimers() error {
 	}
 }
 
+// ListTimers 列出本群所有计时器
 func ListTimers(grpID uint64) []string {
 	// 数组默认长度为map长度,后面append时,不需要重新申请内存和拷贝,效率很高
 	if Timers != nil {
@@ -148,12 +152,12 @@ func loadTimers() {
 	timersmap.Timers = make(map[string]*Timer)
 }
 
-// 获得标准化定时字符串
+// GetTimerInfo 获得标准化定时字符串
 func GetTimerInfo(ts *TimeStamp) string {
 	return fmt.Sprintf("[%d]%d月%d日%d周%d:%d", ts.Grpid, ts.Month, ts.Day, ts.Week, ts.Hour, ts.Minute)
 }
 
-// 获得填充好的ts
+// GetFilledTimeStamp 获得填充好的ts
 func GetFilledTimeStamp(dateStrs []string, matchDateOnly bool) *TimeStamp {
 	monthStr := []rune(dateStrs[1])
 	dayWeekStr := []rune(dateStrs[2])
@@ -163,7 +167,7 @@ func GetFilledTimeStamp(dateStrs []string, matchDateOnly bool) *TimeStamp {
 	var ts TimeStamp
 	ts.Month = chineseNum2Int(monthStr)
 	if (ts.Month != -1 && ts.Month <= 0) || ts.Month > 12 { // 月份非法
-		log.Default().Println("[群管]月份非法！")
+		deflog.Println("[群管]月份非法！")
 		return &ts
 	}
 	lenOfDW := len(dayWeekStr)
@@ -171,14 +175,14 @@ func GetFilledTimeStamp(dateStrs []string, matchDateOnly bool) *TimeStamp {
 		dayWeekStr = []rune{dayWeekStr[0], dayWeekStr[2]} // 去除中间的十
 		ts.Day = chineseNum2Int(dayWeekStr)
 		if (ts.Day != -1 && ts.Day <= 0) || ts.Day > 31 { // 日期非法
-			log.Default().Println("[群管]日期非法1！")
+			deflog.Println("[群管]日期非法1！")
 			return &ts
 		}
 	} else if dayWeekStr[lenOfDW-1] == rune('日') { // xx日
 		dayWeekStr = dayWeekStr[:lenOfDW-1]
 		ts.Day = chineseNum2Int(dayWeekStr)
 		if (ts.Day != -1 && ts.Day <= 0) || ts.Day > 31 { // 日期非法
-			log.Default().Println("[群管]日期非法2！")
+			deflog.Println("[群管]日期非法2！")
 			return &ts
 		}
 	} else if dayWeekStr[0] == rune('每') { // 每周
@@ -190,7 +194,7 @@ func GetFilledTimeStamp(dateStrs []string, matchDateOnly bool) *TimeStamp {
 		}
 		if ts.Week < 0 || ts.Week > 6 { // 星期非法
 			ts.Week = -11
-			log.Default().Println("[群管]星期非法！")
+			deflog.Println("[群管]星期非法！")
 			return &ts
 		}
 	}
@@ -199,7 +203,7 @@ func GetFilledTimeStamp(dateStrs []string, matchDateOnly bool) *TimeStamp {
 	}
 	ts.Hour = chineseNum2Int(hourStr)
 	if ts.Hour < -1 || ts.Hour > 23 { // 小时非法
-		log.Default().Println("[群管]小时非法！")
+		deflog.Println("[群管]小时非法！")
 		return &ts
 	}
 	if len(minuteStr) == 3 {
@@ -207,17 +211,17 @@ func GetFilledTimeStamp(dateStrs []string, matchDateOnly bool) *TimeStamp {
 	}
 	ts.Minute = chineseNum2Int(minuteStr)
 	if ts.Minute < -1 || ts.Minute > 59 { // 分钟非法
-		log.Default().Println("[群管]分钟非法！")
+		deflog.Println("[群管]分钟非法！")
 		return &ts
 	}
 	if !matchDateOnly {
 		urlStr := dateStrs[5]
 		if urlStr != "" { // 是图片url
 			ts.Url = urlStr[3:] // utf-8下用为3字节
-			log.Default().Println("[群管]" + ts.Url)
+			deflog.Println("[群管]" + ts.Url)
 			if !strings.HasPrefix(ts.Url, "http") {
 				ts.Url = "illegal"
-				log.Default().Println("[群管]url非法！")
+				deflog.Println("[群管]url非法！")
 				return &ts
 			}
 		}
@@ -227,7 +231,7 @@ func GetFilledTimeStamp(dateStrs []string, matchDateOnly bool) *TimeStamp {
 	return &ts
 }
 
-// 汉字数字转int，仅支持-10～99，最多两位数，其中"每"解释为-1，"每二"为-2，以此类推
+// chineseNum2Int 汉字数字转int，仅支持-10～99，最多两位数，其中"每"解释为-1，"每二"为-2，以此类推
 func chineseNum2Int(rs []rune) int32 {
 	r := -1
 	l := len(rs)
@@ -256,7 +260,7 @@ func chineseNum2Int(rs []rune) int32 {
 	return int32(r)
 }
 
-// 处理单个字符的映射0~10
+// chineseChar2Int 处理单个字符的映射0~10
 func chineseChar2Int(c rune) int {
 	if c == rune('日') || c == rune('天') { // 周日/周天
 		return 7
