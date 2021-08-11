@@ -10,7 +10,6 @@ import (
 	"unicode"
 
 	log "github.com/sirupsen/logrus"
-
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
@@ -124,7 +123,7 @@ func ListTimers(grpID uint64) []string {
 		for k := range *Timers {
 			if strings.Contains(k, g) {
 				start := strings.Index(k, "]")
-				keys = append(keys, k[start+1:]+"")
+				keys = append(keys, strings.ReplaceAll(k[start+1:]+"\n", "-1", "每"))
 			}
 		}
 		return keys
